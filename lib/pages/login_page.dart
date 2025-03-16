@@ -13,14 +13,17 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _passwordConfirmController =
+      TextEditingController();
 
   bool _isLoading = false;
+  bool _forLogin = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(_forLogin ? widget.title : 'Sign Up Page'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: SingleChildScrollView(
@@ -60,6 +63,28 @@ class _LoginPageState extends State<LoginPage> {
                   return null;
                 },
               ),
+
+              SizedBox(height: 20),
+              _forLogin
+                  ? SizedBox()
+                  : TextFormField(
+                    controller: _passwordConfirmController,
+                    decoration: InputDecoration(
+                      labelText: 'Confirm password',
+                      prefixIcon: Icon(Icons.lock),
+                      border: OutlineInputBorder(),
+                    ),
+                    obscureText: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please confirm your password';
+                      }
+                      if (value != _passwordController.text) {
+                        return 'Passwords do not match';
+                      }
+                      return null;
+                    },
+                  ),
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
@@ -68,16 +93,23 @@ class _LoginPageState extends State<LoginPage> {
                       _isLoading
                           ? null
                           : () async {
-                            setState(() {
-                              _isLoading = true;
-                            });
                             if (_formKey.currentState!.validate()) {
+                              setState(() {
+                                _isLoading = true;
+                              });
                               // Implement login functionality
                               try {
-                                await Auth().logInWithEmailAndPassword(
-                                  _emailController.text,
-                                  _passwordController.text,
-                                );
+                                if (_forLogin) {
+                                  await Auth().logInWithEmailAndPassword(
+                                    _emailController.text,
+                                    _passwordController.text,
+                                  );
+                                } else {
+                                  await Auth().createUserWithEmailAndPassword(
+                                    _emailController.text,
+                                    _passwordController.text,
+                                  );
+                                }
                                 setState(() {
                                   _isLoading = false;
                                 });
@@ -116,9 +148,26 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           )
                           : Text(
-                            'Login',
+                            _forLogin ? 'Login' : 'Sign Up',
                             style: TextStyle(fontSize: 20, color: Colors.white),
                           ),
+                ),
+              ),
+              SizedBox(
+                child: TextButton(
+                  onPressed: () {
+                    _emailController.clear();
+                    _passwordController.clear();
+                    _passwordConfirmController.clear();
+                    setState(() {
+                      _forLogin = !_forLogin;
+                    });
+                  },
+                  child: Text(
+                    _forLogin
+                        ? "Je n'ai pas encore de compte s'inscrire"
+                        : "J'ai deja un compte se connecter",
+                  ),
                 ),
               ),
             ],
